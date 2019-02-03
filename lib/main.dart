@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import 'package:flutter/semantics.dart';
 
 void main() => runApp(MyApp());
 
@@ -24,6 +24,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
+  final homeKey = GlobalKey();
+
   MyHomePage({Key key, this.title}) : super(key: key);
 
   final String title;
@@ -33,33 +35,87 @@ class MyHomePage extends StatefulWidget {
 }
 
 class Timer {
+  String eventName;
   DateTime timerDate;
   TimeOfDay timerTime;
 
-  Timer(this.timerDate, this.timerTime);
+  Timer(this.eventName, this.timerDate, this.timerTime);
+}
+
+class TimerList {
+  List _timers = <Timer>[];
+
+  static final TimerList _singleton = new TimerList._internal();
+
+  factory TimerList() {
+    return _singleton;
+  }
+
+  void add(Timer timer) {
+    _timers.add(timer);
+  }
+
+  List<Timer> get() {
+    return _timers;
+  }
+
+  TimerList._internal();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List _timers = <Timer>[];
+//  List _timers = <Timer>[];
+  TimerList _timers = TimerList();
 
-  void _addTimer() {
+  DismissDirection _dismissDirection = DismissDirection.horizontal;
+
+  void _handleDelete(Timer timer) {
+//    setState(() {
+//      _timers.remove(timer);
+//    });
+  }
+
+  void addTimer(Timer timer) {
     setState(() {
-      _timers.add(Timer(DateTime.now(), TimeOfDay.now()));
+      _timers.add(timer);
     });
+  }
+
+  void _pressAddTimer() {
+    navigateTimer(
+      Timer(
+        '',
+        DateTime.now(),
+        TimeOfDay.now()
+      )
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    print('---> home build');
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
       body: timerList(),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addTimer,
+        onPressed: _pressAddTimer,
         tooltip: 'Add',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+
+  void navigateTimer(Timer timer) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) =>
+            DateAndTimePicker(
+              name: timer.eventName,
+              date: timer.timerDate,
+              time: timer.timerTime
+            )
+        )
     );
   }
 
@@ -67,15 +123,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return
       RaisedButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) =>
-              DateAndTimePicker(
-                date: timer.timerDate,
-                time: timer.timerTime
-              )
-            )
-          );
+          navigateTimer(timer);
         },
         child: Container(
           color: Colors.lightBlueAccent,
@@ -98,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget timerList() {
     List widgets = <Widget>[];
-    for(var timer in _timers) {
+    for(var timer in _timers.get()) {
       widgets.add(timerListTime(timer));
     }
     return SingleChildScrollView(
@@ -215,9 +263,9 @@ class _DateTimePicker extends StatelessWidget {
 
 class DateAndTimePicker extends StatefulWidget {
 //  static final String routeName = '/timer';
+  const DateAndTimePicker({Key key, this.name, this.date, this.time}): super(key: key);
 
-  const DateAndTimePicker({Key key, this.date, this.time}): super(key: key);
-
+  final String name;
   final DateTime date;
   final TimeOfDay time;
 
@@ -228,6 +276,8 @@ class DateAndTimePicker extends StatefulWidget {
 class _DateAndTimePickerState extends State<DateAndTimePicker> {
   DateTime _timerDate; // = DateTime.now();
   TimeOfDay _timerTime; // = const TimeOfDay(hour: 7, minute: 28);
+
+  TimerList _timers = TimerList();
 
   @override
   Widget build(BuildContext context) {
@@ -266,6 +316,79 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
                 },
               ),
             ],
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _timers.add(
+              Timer(
+                  'aa',
+                  DateTime.now(),
+                  TimeOfDay.now()
+              )
+          );
+          Navigator.pop(context);
+        },
+        tooltip: 'Save',
+        child: Icon(Icons.save),
+      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class _LeaveBehindListItem extends StatelessWidget {
+  const _LeaveBehindListItem({
+    Key key,
+    @required this.timer,
+    @required this.onDelete,
+    @required this.dismissDirection,
+  }) : super(key: key);
+
+  final Timer timer;
+  final DismissDirection dismissDirection;
+  final void Function(Timer) onDelete;
+
+  void _handleDelete() {
+    onDelete(timer);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Semantics(
+      customSemanticsActions: <CustomSemanticsAction, VoidCallback>{
+        const CustomSemanticsAction(label: 'Delete'): _handleDelete,
+      },
+      child: Dismissible(
+        key: ObjectKey(timer),
+        direction: dismissDirection,
+        onDismissed: (DismissDirection direction) {
+          if (direction == DismissDirection.startToEnd)
+            _handleDelete();
+        },
+        background: Container(
+            color: theme.primaryColor,
+            child: const ListTile(
+                leading: Icon(Icons.delete, color: Colors.white, size: 36.0)
+            )
+        ),
+        secondaryBackground: Container(
+            color: theme.primaryColor,
+            child: const ListTile(
+                trailing: Icon(Icons.archive, color: Colors.white, size: 36.0)
+            )
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+              color: theme.canvasColor,
+              border: Border(bottom: BorderSide(color: theme.dividerColor))
+          ),
+          child: ListTile(
+              title: Text(timer.eventName),
+//              subtitle: Text('${timer.subject}\n${timer.body}'),
+              subtitle: Text(timer.timerDate.toString() + ' ' + timer.timerTime.toString()),
+              isThreeLine: true
           ),
         ),
       ),
