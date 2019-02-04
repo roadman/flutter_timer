@@ -133,7 +133,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child:
             Center(
               child: Text(
-                '鳴らす！' + timer.timerDate.toString() + ' ' + timer.timerTime.toString(),
+                '鳴らす！' + timer.eventName + ':' + timer.timerDate.toString() + ' ' + timer.timerTime.toString(),
                 style: TextStyle(
                   color: Colors.black,
                 ),
@@ -274,10 +274,20 @@ class DateAndTimePicker extends StatefulWidget {
 }
 
 class _DateAndTimePickerState extends State<DateAndTimePicker> {
+  String _eventName;
   DateTime _timerDate; // = DateTime.now();
   TimeOfDay _timerTime; // = const TimeOfDay(hour: 7, minute: 28);
 
   TimerList _timers = TimerList();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _eventName = widget.name;
+    _timerDate = widget.date;
+    _timerTime = widget.time;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -299,11 +309,16 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
                   border: OutlineInputBorder(),
                 ),
                 style: Theme.of(context).textTheme.display1,
+                onChanged: (text) {
+                  setState(() {
+                    _eventName = text;
+                  });
+                },
               ),
               _DateTimePicker(
                 labelText: 'Alert Time',
-                selectedDate: widget.date == null ? DateTime.now():widget.date,
-                selectedTime: widget.time == null ? TimeOfDay.now():widget.time,
+                selectedDate: _timerDate == null ? DateTime.now():_timerDate,
+                selectedTime: _timerTime == null ? TimeOfDay.now():_timerTime,
                 selectDate: (DateTime date) {
                   setState(() {
                     _timerDate = date;
@@ -323,9 +338,9 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
         onPressed: () {
           _timers.add(
               Timer(
-                  'aa',
-                  DateTime.now(),
-                  TimeOfDay.now()
+                _eventName,
+                _timerDate,
+                _timerTime,
               )
           );
           Navigator.pop(context);
