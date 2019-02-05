@@ -147,7 +147,10 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget timerList() {
     List widgets = <Widget>[];
     for(var timer in _timers.get()) {
-      widgets.add(timerListTime(timer));
+      widgets.add(_LeaveBehindListItem(
+          timer: timer,
+      ));
+//      widgets.add(timerListTime(timer));
     }
     return SingleChildScrollView(
       child: Column(
