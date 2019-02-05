@@ -59,6 +59,10 @@ class TimerList {
     return _timers;
   }
 
+  void del(Timer timer) {
+    _timers.remove(timer);
+  }
+
   TimerList._internal();
 }
 
@@ -68,15 +72,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   DismissDirection _dismissDirection = DismissDirection.horizontal;
 
-  void _handleDelete(Timer timer) {
-//    setState(() {
-//      _timers.remove(timer);
-//    });
-  }
-
   void addTimer(Timer timer) {
     setState(() {
       _timers.add(timer);
+    });
+  }
+
+  void delTimer(Timer timer) {
+    setState(() {
+      _timers.del(timer);
     });
   }
 
@@ -148,7 +152,9 @@ class _MyHomePageState extends State<MyHomePage> {
     List widgets = <Widget>[];
     for(var timer in _timers.get()) {
       widgets.add(_LeaveBehindListItem(
-          timer: timer,
+        timer: timer,
+        onDelete: delTimer,
+        dismissDirection: DismissDirection.horizontal,
       ));
 //      widgets.add(timerListTime(timer));
     }
