@@ -154,7 +154,7 @@ class _MyHomePageState extends State<MyHomePage> {
       widgets.add(_LeaveBehindListItem(
         timer: timer,
         onDelete: delTimer,
-        dismissDirection: DismissDirection.horizontal,
+        dismissDirection: DismissDirection.startToEnd,
       ));
 //      widgets.add(timerListTime(timer));
     }
@@ -397,12 +397,12 @@ class _LeaveBehindListItem extends StatelessWidget {
                 leading: Icon(Icons.delete, color: Colors.white, size: 36.0)
             )
         ),
-        secondaryBackground: Container(
-            color: theme.primaryColor,
-            child: const ListTile(
-                trailing: Icon(Icons.archive, color: Colors.white, size: 36.0)
-            )
-        ),
+//        secondaryBackground: Container(
+//            color: theme.primaryColor,
+//            child: const ListTile(
+//                trailing: Icon(Icons.archive, color: Colors.white, size: 36.0)
+//            )
+//        ),
         child: Container(
           decoration: BoxDecoration(
               color: theme.canvasColor,
