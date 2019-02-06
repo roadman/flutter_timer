@@ -151,11 +151,18 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget timerList() {
     List widgets = <Widget>[];
     for(var timer in _timers.get()) {
-      widgets.add(_LeaveBehindListItem(
-        timer: timer,
-        onDelete: delTimer,
-        dismissDirection: DismissDirection.startToEnd,
-      ));
+      widgets.add(
+        RaisedButton(
+          onPressed: () {
+            navigateTimer(timer);
+          },
+          child: _LeaveBehindListItem(
+              timer: timer,
+              onDelete: delTimer,
+              dismissDirection: DismissDirection.startToEnd,
+          ),
+        )
+      );
 //      widgets.add(timerListTime(timer));
     }
     return SingleChildScrollView(
