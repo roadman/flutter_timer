@@ -26,8 +26,13 @@ class Timer {
   String eventName;
   DateTime timerDate;
   TimeOfDay timerTime;
+  bool isEnable;
 
-  Timer(this.eventName, this.timerDate, this.timerTime);
+  Timer(this.eventName, this.timerDate, this.timerTime, this.isEnable);
+
+  static Timer createTimer() {
+    return Timer('', DateTime.now(), TimeOfDay.now(), true);
+  }
 }
 
 class TimerList {
@@ -258,23 +263,34 @@ class DateAndTimePicker extends StatefulWidget {
 
 class _DateAndTimePickerState extends State<DateAndTimePicker> {
   String _eventName;
-  DateTime _timerDate; // = DateTime.now();
-  TimeOfDay _timerTime; // = const TimeOfDay(hour: 7, minute: 28);
+  DateTime _timerDate;
+  TimeOfDay _timerTime;
+  bool _isEnable;
 
   TimerList _timers = TimerList();
+
+  void setSelfTimer(Timer timer) {
+    _eventName = timer.eventName;
+    _timerDate = timer.timerDate;
+    _timerTime = timer.timerTime;
+    _isEnable  = timer.isEnable;
+  }
+
+  void setTimerFromSelf(Timer timer) {
+    timer.eventName = _eventName;
+    timer.timerDate = _timerDate;
+    timer.timerTime = _timerTime;
+    timer.isEnable  = _isEnable;
+  }
 
   @override
   void initState() {
     super.initState();
     if (widget.timer == null) {
-      _eventName = '';
-      _timerDate = DateTime.now();
-      _timerTime = TimeOfDay.now();
+      setSelfTimer(Timer.createTimer());
       return;
     }
-    _eventName = widget.timer.eventName;
-    _timerDate = widget.timer.timerDate;
-    _timerTime = widget.timer.timerTime;
+    setSelfTimer(widget.timer);
   }
 
   @override
@@ -319,22 +335,41 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
                   });
                 },
               ),
+              Align(
+                alignment: const Alignment(0.0, -0.2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Switch.adaptive(
+                      value: _isEnable,
+                      onChanged: (bool value) {
+                        setState(() {
+                          _isEnable = value;
+                        });
+                      }
+                    ),
+                  ],
+                ),
+              )
+//              Switch(
+//                value: _isEnable,
+//                onChanged: (bool value) {
+//                  setState(() {
+//                    _isEnable = value;
+//                  });
+//                }
+//              )
             ],
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          print("_eventName: " + _eventName);
           if (widget.timer == null) {
-            Timer _newTimer = Timer(_eventName, _timerDate, _timerTime);
-            _timers.add(_newTimer);
+            _timers.add(Timer(_eventName, _timerDate, _timerTime, _isEnable));
           } else {
-            Timer _timer = widget.timer;
-            _timer.eventName = _eventName;
-            _timer.timerDate = _timerDate;
-            _timer.timerTime = _timerTime;
-            _timers.update(_timer);
+            setTimerFromSelf(widget.timer);
+            _timers.update(widget.timer);
           }
           Navigator.pop(context);
         },
@@ -374,30 +409,36 @@ class _LeaveBehindListItem extends StatelessWidget {
         customSemanticsActions: <CustomSemanticsAction, VoidCallback>{
           const CustomSemanticsAction(label: 'Delete'): _handleDelete,
         },
-        child: RaisedButton(
-          onPressed: _handleEdit,
-          child: Dismissible(
-            key: ObjectKey(timer),
-            direction: dismissDirection,
-            onDismissed: (DismissDirection direction) {
-              if (direction == DismissDirection.startToEnd) _handleDelete();
-            },
-            background: Container(
-                color: theme.primaryColor,
-                child: const ListTile(
-                    leading:
-                        Icon(Icons.delete, color: Colors.white, size: 36.0))),
-            child: Container(
-              decoration: BoxDecoration(
-                  color: theme.canvasColor,
-                  border:
-                      Border(bottom: BorderSide(color: theme.dividerColor))),
-              child: ListTile(
-                  title: Text(timer.eventName),
-                  subtitle: Text(timer.timerDate.toString() +
-                      ' ' +
-                      timer.timerTime.toString()),
-                  isThreeLine: true),
+        child: Dismissible(
+          key: ObjectKey(timer),
+          direction: dismissDirection,
+          onDismissed: (DismissDirection direction) {
+            if (direction == DismissDirection.startToEnd) _handleDelete();
+          },
+          background: Container(
+              color: theme.primaryColor,
+              child: const ListTile(
+                  leading: Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: 36.0
+                  )
+              )
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+                color: theme.canvasColor,
+                border: Border(
+                    bottom: BorderSide(
+                        color: theme.dividerColor
+                    )
+                )
+            ),
+            child: ListTile(
+              title: Text(timer.eventName),
+              subtitle: Text(timer.timerDate.toString() + ' ' + timer.timerTime.toString()),
+              isThreeLine: true,
+              onTap: _handleEdit,
             ),
           ),
         ));
