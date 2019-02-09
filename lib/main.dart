@@ -17,21 +17,9 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => MyHomePage(title: 'タイマー一覧'),
-//        DateAndTimePicker.routeName: (context) => DateAndTimePicker(),
       },
     );
   }
-}
-
-class MyHomePage extends StatefulWidget {
-  final homeKey = GlobalKey();
-
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
 }
 
 class Timer {
@@ -63,14 +51,32 @@ class TimerList {
     _timers.remove(timer);
   }
 
+  void update(Timer timer) {
+    var idx = _timers.indexOf(timer);
+    if (idx != -1) {
+      print("update: " + idx.toString());
+      _timers[idx] = timer;
+    }
+  }
+
   TimerList._internal();
 }
 
+class MyHomePage extends StatefulWidget {
+  final homeKey = GlobalKey();
+
+  MyHomePage({Key key, this.title}) : super(key: key);
+
+  final String title;
+
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
 class _MyHomePageState extends State<MyHomePage> {
-//  List _timers = <Timer>[];
   TimerList _timers = TimerList();
 
-  DismissDirection _dismissDirection = DismissDirection.horizontal;
+//  DismissDirection _dismissDirection = DismissDirection.horizontal;
 
   void addTimer(Timer timer) {
     setState(() {
@@ -84,14 +90,12 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void editTimer(Timer timer) {
+    navigateTimer(timer);
+  }
+
   void _pressAddTimer() {
-    navigateTimer(
-      Timer(
-        '',
-        DateTime.now(),
-        TimeOfDay.now()
-      )
-    );
+    navigateTimer(null);
   }
 
   @override
@@ -113,57 +117,21 @@ class _MyHomePageState extends State<MyHomePage> {
   void navigateTimer(Timer timer) {
     Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) =>
-            DateAndTimePicker(
-              name: timer.eventName,
-              date: timer.timerDate,
-              time: timer.timerTime
-            )
-        )
-    );
-  }
-
-  Widget timerListTime(Timer timer) {
-    return
-      RaisedButton(
-        onPressed: () {
-          navigateTimer(timer);
-        },
-        child: Container(
-          color: Colors.lightBlueAccent,
-          height: 50.0,
-          child: Padding(
-            padding: EdgeInsets.all(5.0),
-            child:
-            Center(
-              child: Text(
-                '鳴らす！' + timer.eventName + ':' + timer.timerDate.toString() + ' ' + timer.timerTime.toString(),
-                style: TextStyle(
-                  color: Colors.black,
-                ),
-              ),
-            ),
-          ),
-        )
-      );
+        MaterialPageRoute(
+            builder: (context) => DateAndTimePicker(timer: timer)));
   }
 
   Widget timerList() {
     List widgets = <Widget>[];
-    for(var timer in _timers.get()) {
+    for (var timer in _timers.get()) {
       widgets.add(
-        RaisedButton(
-          onPressed: () {
-            navigateTimer(timer);
-          },
-          child: _LeaveBehindListItem(
-              timer: timer,
-              onDelete: delTimer,
-              dismissDirection: DismissDirection.startToEnd,
-          ),
-        )
+        _LeaveBehindListItem(
+          timer: timer,
+          onDelete: delTimer,
+          onEdit: editTimer,
+          dismissDirection: DismissDirection.startToEnd,
+        ),
       );
-//      widgets.add(timerListTime(timer));
     }
     return SingleChildScrollView(
       child: Column(
@@ -174,13 +142,14 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class _InputDropdown extends StatelessWidget {
-  const _InputDropdown({
-    Key key,
-    this.child,
-    this.labelText,
-    this.valueText,
-    this.valueStyle,
-    this.onPressed }) : super(key: key);
+  const _InputDropdown(
+      {Key key,
+      this.child,
+      this.labelText,
+      this.valueText,
+      this.valueStyle,
+      this.onPressed})
+      : super(key: key);
 
   final String labelText;
   final String valueText;
@@ -203,8 +172,9 @@ class _InputDropdown extends StatelessWidget {
           children: <Widget>[
             Text(valueText, style: valueStyle),
             Icon(Icons.arrow_drop_down,
-                color: Theme.of(context).brightness == Brightness.light ? Colors.grey.shade700 : Colors.white70
-            ),
+                color: Theme.of(context).brightness == Brightness.light
+                    ? Colors.grey.shade700
+                    : Colors.white70),
           ],
         ),
       ),
@@ -213,14 +183,14 @@ class _InputDropdown extends StatelessWidget {
 }
 
 class _DateTimePicker extends StatelessWidget {
-  const _DateTimePicker({
-    Key key,
-    this.labelText,
-    this.selectedDate,
-    this.selectedTime,
-    this.selectDate,
-    this.selectTime
-  }) : super(key: key);
+  const _DateTimePicker(
+      {Key key,
+      this.labelText,
+      this.selectedDate,
+      this.selectedTime,
+      this.selectDate,
+      this.selectTime})
+      : super(key: key);
 
   final String labelText;
   final DateTime selectedDate;
@@ -233,19 +203,14 @@ class _DateTimePicker extends StatelessWidget {
         context: context,
         initialDate: selectedDate,
         firstDate: DateTime(2015, 8),
-        lastDate: DateTime(2101)
-    );
-    if (picked != null && picked != selectedDate)
-      selectDate(picked);
+        lastDate: DateTime(2101));
+    if (picked != null && picked != selectedDate) selectDate(picked);
   }
 
   Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay picked = await showTimePicker(
-        context: context,
-        initialTime: selectedTime
-    );
-    if (picked != null && picked != selectedTime)
-      selectTime(picked);
+    final TimeOfDay picked =
+        await showTimePicker(context: context, initialTime: selectedTime);
+    if (picked != null && picked != selectedTime) selectTime(picked);
   }
 
   @override
@@ -260,7 +225,9 @@ class _DateTimePicker extends StatelessWidget {
             labelText: labelText,
             valueText: DateFormat.yMMMd().format(selectedDate),
             valueStyle: valueStyle,
-            onPressed: () { _selectDate(context); },
+            onPressed: () {
+              _selectDate(context);
+            },
           ),
         ),
         const SizedBox(width: 12.0),
@@ -269,7 +236,9 @@ class _DateTimePicker extends StatelessWidget {
           child: _InputDropdown(
             valueText: selectedTime.format(context),
             valueStyle: valueStyle,
-            onPressed: () { _selectTime(context); },
+            onPressed: () {
+              _selectTime(context);
+            },
           ),
         ),
       ],
@@ -278,12 +247,10 @@ class _DateTimePicker extends StatelessWidget {
 }
 
 class DateAndTimePicker extends StatefulWidget {
-//  static final String routeName = '/timer';
-  const DateAndTimePicker({Key key, this.name, this.date, this.time}): super(key: key);
+//  const DateAndTimePicker({Key key, this.name, this.date, this.time}): super(key: key);
+  const DateAndTimePicker({Key key, this.timer}) : super(key: key);
 
-  final String name;
-  final DateTime date;
-  final TimeOfDay time;
+  final Timer timer;
 
   @override
   _DateAndTimePickerState createState() => _DateAndTimePickerState();
@@ -298,11 +265,16 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    _eventName = widget.name;
-    _timerDate = widget.date;
-    _timerTime = widget.time;
+    if (widget.timer == null) {
+      _eventName = '';
+      _timerDate = DateTime.now();
+      _timerTime = TimeOfDay.now();
+      return;
+    }
+    _eventName = widget.timer.eventName;
+    _timerDate = widget.timer.timerDate;
+    _timerTime = widget.timer.timerTime;
   }
 
   @override
@@ -325,6 +297,7 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
                   border: OutlineInputBorder(),
                 ),
                 style: Theme.of(context).textTheme.display1,
+                controller: TextEditingController(text: _eventName),
                 onChanged: (text) {
                   setState(() {
                     _eventName = text;
@@ -333,8 +306,8 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
               ),
               _DateTimePicker(
                 labelText: 'Alert Time',
-                selectedDate: _timerDate == null ? DateTime.now():_timerDate,
-                selectedTime: _timerTime == null ? TimeOfDay.now():_timerTime,
+                selectedDate: _timerDate == null ? DateTime.now() : _timerDate,
+                selectedTime: _timerTime == null ? TimeOfDay.now() : _timerTime,
                 selectDate: (DateTime date) {
                   setState(() {
                     _timerDate = date;
@@ -352,13 +325,17 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _timers.add(
-              Timer(
-                _eventName,
-                _timerDate,
-                _timerTime,
-              )
-          );
+          print("_eventName: " + _eventName);
+          if (widget.timer == null) {
+            Timer _newTimer = Timer(_eventName, _timerDate, _timerTime);
+            _timers.add(_newTimer);
+          } else {
+            Timer _timer = widget.timer;
+            _timer.eventName = _eventName;
+            _timer.timerDate = _timerDate;
+            _timer.timerTime = _timerTime;
+            _timers.update(_timer);
+          }
           Navigator.pop(context);
         },
         tooltip: 'Save',
@@ -373,56 +350,56 @@ class _LeaveBehindListItem extends StatelessWidget {
     Key key,
     @required this.timer,
     @required this.onDelete,
+    @required this.onEdit,
     @required this.dismissDirection,
   }) : super(key: key);
 
   final Timer timer;
   final DismissDirection dismissDirection;
   final void Function(Timer) onDelete;
+  final void Function(Timer) onEdit;
 
   void _handleDelete() {
     onDelete(timer);
+  }
+
+  void _handleEdit() {
+    onEdit(timer);
   }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Semantics(
-      customSemanticsActions: <CustomSemanticsAction, VoidCallback>{
-        const CustomSemanticsAction(label: 'Delete'): _handleDelete,
-      },
-      child: Dismissible(
-        key: ObjectKey(timer),
-        direction: dismissDirection,
-        onDismissed: (DismissDirection direction) {
-          if (direction == DismissDirection.startToEnd)
-            _handleDelete();
+        customSemanticsActions: <CustomSemanticsAction, VoidCallback>{
+          const CustomSemanticsAction(label: 'Delete'): _handleDelete,
         },
-        background: Container(
-            color: theme.primaryColor,
-            child: const ListTile(
-                leading: Icon(Icons.delete, color: Colors.white, size: 36.0)
-            )
-        ),
-//        secondaryBackground: Container(
-//            color: theme.primaryColor,
-//            child: const ListTile(
-//                trailing: Icon(Icons.archive, color: Colors.white, size: 36.0)
-//            )
-//        ),
-        child: Container(
-          decoration: BoxDecoration(
-              color: theme.canvasColor,
-              border: Border(bottom: BorderSide(color: theme.dividerColor))
+        child: RaisedButton(
+          onPressed: _handleEdit,
+          child: Dismissible(
+            key: ObjectKey(timer),
+            direction: dismissDirection,
+            onDismissed: (DismissDirection direction) {
+              if (direction == DismissDirection.startToEnd) _handleDelete();
+            },
+            background: Container(
+                color: theme.primaryColor,
+                child: const ListTile(
+                    leading:
+                        Icon(Icons.delete, color: Colors.white, size: 36.0))),
+            child: Container(
+              decoration: BoxDecoration(
+                  color: theme.canvasColor,
+                  border:
+                      Border(bottom: BorderSide(color: theme.dividerColor))),
+              child: ListTile(
+                  title: Text(timer.eventName),
+                  subtitle: Text(timer.timerDate.toString() +
+                      ' ' +
+                      timer.timerTime.toString()),
+                  isThreeLine: true),
+            ),
           ),
-          child: ListTile(
-              title: Text(timer.eventName),
-//              subtitle: Text('${timer.subject}\n${timer.body}'),
-              subtitle: Text(timer.timerDate.toString() + ' ' + timer.timerTime.toString()),
-              isThreeLine: true
-          ),
-        ),
-      ),
-    );
+        ));
   }
 }
