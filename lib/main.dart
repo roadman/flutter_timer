@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 void main() => runApp(MyApp());
 
@@ -23,15 +24,32 @@ class MyApp extends StatelessWidget {
 }
 
 class Timer {
+  int id;
   String eventName;
   DateTime timerDate;
   TimeOfDay timerTime;
   bool isEnable;
 
-  Timer(this.eventName, this.timerDate, this.timerTime, this.isEnable);
+  Timer(this.id, this.eventName, this.timerDate, this.timerTime, this.isEnable);
 
-  static Timer createTimer() {
-    return Timer('', DateTime.now(), TimeOfDay.now(), true);
+  int getId() {
+    return id;
+  }
+
+  DateTime getDatetime() {
+    return timerDate;
+  }
+
+  static int newId() {
+    return (DateTime.now().toUtc().millisecondsSinceEpoch / 1000).round();
+  }
+
+  static Timer createTimer(String _eventName, DateTime _timerDate, TimeOfDay _timerTime, bool _isEnable) {
+    return Timer(Timer.newId(), _eventName, _timerDate, _timerTime, _isEnable);
+  }
+
+  static Timer createDefaultTimer() {
+    return Timer(Timer.newId(), '', DateTime.now(), TimeOfDay.now(), true);
   }
 }
 
@@ -44,23 +62,83 @@ class TimerList {
     return _singleton;
   }
 
-  void add(Timer timer) {
-    _timers.add(timer);
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+
+  void initNotification() {
+    var initializationSettingsAndroid = new AndroidInitializationSettings('app_icon');
+    var initializationSettingsIOS = new IOSInitializationSettings();
+    var initializationSettings = new InitializationSettings(
+        initializationSettingsAndroid,
+        initializationSettingsIOS
+    );
+    flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+    flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  // notification
+  Future _showNotification(Timer timer) async {
+    var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
+        'your channel id',
+        'your channel name',
+        'your channel description',
+        importance: Importance.Max,
+        priority: Priority.High);
+    var iOSPlatformChannelSpecifics = new IOSNotificationDetails();
+    var platformChannelSpecifics = new NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+
+    var timerDt = DateTime(
+      timer.timerDate.year,
+      timer.timerDate.month,
+      timer.timerDate.day,
+      timer.timerTime.hour,
+      timer.timerTime.minute,
+    );
+    print("set timer:" + timer.getId().toString() + " " + timerDt.toIso8601String());
+    await flutterLocalNotificationsPlugin.schedule(
+      timer.getId(),
+      'Timer',
+      'You should check the app',
+      timerDt,
+      platformChannelSpecifics,
+      payload: 'Default_Sound',
+    );
+  }
+
+  Future _cancelNotification(Timer timer) async {
+    print("cancel timer:" + timer.getId().toString());
+    await flutterLocalNotificationsPlugin.cancel(timer.getId());
+  }
+
+  void setSchedular(Timer timer) {
+    _showNotification(timer);
+  }
+
+  void cancelSchedular(Timer timer) {
+    _cancelNotification(timer);
   }
 
   List<Timer> get() {
     return _timers;
   }
 
+  void add(Timer timer) {
+    setSchedular(timer);
+    _timers.add(timer);
+  }
+
   void del(Timer timer) {
+    cancelSchedular(timer);
     _timers.remove(timer);
   }
 
-  void update(Timer timer) {
+  void save(Timer timer) {
     var idx = _timers.indexOf(timer);
     if (idx != -1) {
-      print("update: " + idx.toString());
+      print("save: " + idx.toString());
       _timers[idx] = timer;
+
+      cancelSchedular(timer);
+      setSchedular(timer);
     }
   }
 
@@ -68,7 +146,7 @@ class TimerList {
 }
 
 class MyHomePage extends StatefulWidget {
-  final homeKey = GlobalKey();
+//  final homeKey = GlobalKey();
 
   MyHomePage({Key key, this.title}) : super(key: key);
 
@@ -81,12 +159,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   TimerList _timers = TimerList();
 
-//  DismissDirection _dismissDirection = DismissDirection.horizontal;
-
-  void addTimer(Timer timer) {
-    setState(() {
-      _timers.add(timer);
-    });
+  @override
+  void initState() {
+    super.initState();
+    _timers.initNotification();
   }
 
   void delTimer(Timer timer) {
@@ -105,7 +181,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    print('---> home build');
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -123,7 +198,9 @@ class _MyHomePageState extends State<MyHomePage> {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) => DateAndTimePicker(timer: timer)));
+            builder: (context) => DateAndTimePicker(timer: timer)
+        )
+    );
   }
 
   Widget timerList() {
@@ -252,7 +329,6 @@ class _DateTimePicker extends StatelessWidget {
 }
 
 class DateAndTimePicker extends StatefulWidget {
-//  const DateAndTimePicker({Key key, this.name, this.date, this.time}): super(key: key);
   const DateAndTimePicker({Key key, this.timer}) : super(key: key);
 
   final Timer timer;
@@ -287,7 +363,7 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
   void initState() {
     super.initState();
     if (widget.timer == null) {
-      setSelfTimer(Timer.createTimer());
+      setSelfTimer(Timer.createDefaultTimer());
       return;
     }
     setSelfTimer(widget.timer);
@@ -366,10 +442,10 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (widget.timer == null) {
-            _timers.add(Timer(_eventName, _timerDate, _timerTime, _isEnable));
+            _timers.add(Timer.createTimer(_eventName, _timerDate, _timerTime, _isEnable));
           } else {
             setTimerFromSelf(widget.timer);
-            _timers.update(widget.timer);
+            _timers.save(widget.timer);
           }
           Navigator.pop(context);
         },
