@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/semantics.dart';
@@ -77,12 +78,25 @@ class TimerList {
 
   // notification
   Future _showNotification(Timer timer) async {
+    var vibrationPattern = Int64List(4);
+    vibrationPattern[0] = 0;
+    vibrationPattern[1] = 1000;
+    vibrationPattern[2] = 5000;
+    vibrationPattern[3] = 2000;
+
     var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
         'your channel id',
         'your channel name',
         'your channel description',
         importance: Importance.Max,
-        priority: Priority.High);
+        priority: Priority.High,
+        icon: 'secondary_icon',
+        sound: 'slow_spring_board',
+        largeIcon: 'sample_large_icon',
+        largeIconBitmapSource: BitmapSource.Drawable,
+        vibrationPattern: vibrationPattern,
+        color: const Color.fromARGB(255, 255, 0, 0),
+    );
     var iOSPlatformChannelSpecifics = new IOSNotificationDetails();
     var platformChannelSpecifics = new NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
 
@@ -93,6 +107,8 @@ class TimerList {
       timer.timerTime.hour,
       timer.timerTime.minute,
     );
+//    var timerDt = DateTime.now().add(Duration(seconds: 5));
+
     print("set timer:" + timer.getId().toString() + " " + timerDt.toIso8601String());
     await flutterLocalNotificationsPlugin.schedule(
       timer.getId(),
@@ -102,6 +118,7 @@ class TimerList {
       platformChannelSpecifics,
       payload: 'Default_Sound',
     );
+
   }
 
   Future _cancelNotification(Timer timer) async {
