@@ -57,7 +57,7 @@ class Timer {
 class TimerList {
   List _timers = <Timer>[];
 
-  static final TimerList _singleton = new TimerList._internal();
+  static final TimerList _singleton = TimerList._internal();
 
   factory TimerList() {
     return _singleton;
@@ -66,14 +66,27 @@ class TimerList {
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
   void initNotification() {
-    var initializationSettingsAndroid = new AndroidInitializationSettings('app_icon');
-    var initializationSettingsIOS = new IOSInitializationSettings();
-    var initializationSettings = new InitializationSettings(
+    var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
+    var initializationSettingsIOS = IOSInitializationSettings();
+    var initializationSettings = InitializationSettings(
         initializationSettingsAndroid,
         initializationSettingsIOS
     );
-    flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
-    flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    flutterLocalNotificationsPlugin.initialize(
+        initializationSettings,
+        onSelectNotification: onSelectNotification
+    );
+  }
+
+  Future onSelectNotification(String payload) async {
+    if (payload != null) {
+      debugPrint('notification payload: ' + payload);
+    }
+//    await Navigator.push(
+//      context,
+//      new MaterialPageRoute(builder: (context) => new SecondScreen(payload)),
+//    );
   }
 
   // notification
@@ -84,7 +97,7 @@ class TimerList {
     vibrationPattern[2] = 5000;
     vibrationPattern[3] = 2000;
 
-    var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
         'your channel id',
         'your channel name',
         'your channel description',
@@ -97,8 +110,8 @@ class TimerList {
         vibrationPattern: vibrationPattern,
         color: const Color.fromARGB(255, 255, 0, 0),
     );
-    var iOSPlatformChannelSpecifics = new IOSNotificationDetails();
-    var platformChannelSpecifics = new NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
 
     var timerDt = DateTime(
       timer.timerDate.year,
