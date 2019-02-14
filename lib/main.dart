@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:sqflite/sqflite.dart';
 
 void main() => runApp(MyApp());
 
@@ -52,6 +54,19 @@ class Timer {
   static Timer createDefaultTimer() {
     return Timer(Timer.newId(), '', DateTime.now(), TimeOfDay.now(), true);
   }
+}
+
+class DatabaseDriver {
+  static const dbName = "timer.db";
+
+  String dbPath;
+  String path;
+
+  void getPath() async {
+    dbPath = await getDatabasesPath();
+    path = join(dbPath, dbName);
+  }
+
 }
 
 class TimerList {
@@ -195,18 +210,23 @@ class _MyHomePageState extends State<MyHomePage> {
     _timers.initNotification();
   }
 
-  void delTimer(Timer timer) {
-    setState(() {
-      _timers.del(timer);
-    });
+  Function delTimer(Timer timer) {
+    return () {
+      setState(() {
+        _timers.del(timer);
+      });
+    };
   }
 
-  void editTimer(Timer timer) {
-    navigateTimer(timer);
-  }
-
-  void _pressAddTimer() {
-    navigateTimer(null);
+  Function _onPressed(BuildContext context, Timer timer) {
+    return () {
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => DateAndTimePicker(timer: timer)
+            )
+        );
+      };
   }
 
   @override
@@ -215,32 +235,23 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: timerList(),
+      body: timerList(context),
       floatingActionButton: FloatingActionButton(
-        onPressed: _pressAddTimer,
+        onPressed: _onPressed(context, null),
         tooltip: 'Add',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 
-  void navigateTimer(Timer timer) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => DateAndTimePicker(timer: timer)
-        )
-    );
-  }
-
-  Widget timerList() {
+  Widget timerList(BuildContext context) {
     List widgets = <Widget>[];
     for (var timer in _timers.get()) {
       widgets.add(
         _LeaveBehindListItem(
           timer: timer,
-          onDelete: delTimer,
-          onEdit: editTimer,
+          onDelete: delTimer(timer),
+          onEdit: _onPressed(context, timer),
           dismissDirection: DismissDirection.startToEnd,
         ),
       );
@@ -497,15 +508,15 @@ class _LeaveBehindListItem extends StatelessWidget {
 
   final Timer timer;
   final DismissDirection dismissDirection;
-  final void Function(Timer) onDelete;
-  final void Function(Timer) onEdit;
+  final void Function() onDelete;
+  final void Function() onEdit;
 
   void _handleDelete() {
-    onDelete(timer);
+    onDelete();
   }
 
   void _handleEdit() {
-    onEdit(timer);
+    onEdit();
   }
 
   @override
