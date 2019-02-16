@@ -33,44 +33,110 @@ class Timer {
   TimeOfDay timerTime;
   bool isEnable;
 
-  Timer(this.id, this.eventName, this.timerDate, this.timerTime, this.isEnable);
+  Timer();
+
+  Map<String, dynamic> toMap() {
+    var map = <String, dynamic>{
+      'name': eventName,
+      'date': timerDate.toUtc().toString(),
+      'time': timerTime.toString(),
+      'enable': isEnable == true ? 1 : 0
+    };
+    if (id != null) {
+      map['id'] = id;
+    }
+    print(map);
+    return map;
+  }
+
+  Timer.fromMap(Map<String, dynamic> map) {
+    id = map['id'];
+    eventName = map['name'];
+    timerDate = DateTime.parse(map['date']);
+    print(map['time']);
+//    timerTime = map['time'];
+    isEnable = map['enable'] == 1 ? true:false;
+  }
 
   int getId() {
     return id;
   }
 
-  DateTime getDatetime() {
-    return timerDate;
-  }
-
-  static int newId() {
-    return (DateTime.now().toUtc().millisecondsSinceEpoch / 1000).round();
-  }
-
-  static Timer createTimer(String _eventName, DateTime _timerDate, TimeOfDay _timerTime, bool _isEnable) {
-    return Timer(Timer.newId(), _eventName, _timerDate, _timerTime, _isEnable);
+  Timer.createTimer(String _eventName, DateTime _timerDate, TimeOfDay _timerTime, bool _isEnable) {
+    eventName = _eventName;
+    timerDate = _timerDate;
+    timerTime = _timerTime;
+    isEnable = _isEnable;
   }
 
   static Timer createDefaultTimer() {
-    return Timer(Timer.newId(), '', DateTime.now(), TimeOfDay.now(), true);
+    return Timer.createTimer('', DateTime.now(), TimeOfDay.now(), true);
   }
 }
 
 class DatabaseDriver {
   static const dbName = "timer.db";
 
-  String dbPath;
-  String path;
+//  String dbPath;
+//  String path;
 
-  void getPath() async {
-    dbPath = await getDatabasesPath();
-    path = join(dbPath, dbName);
+  Future<String> getPath() async {
+    var dbPath = await getDatabasesPath();
+    return join(dbPath, dbName);
   }
 
+  Future<Database> open() async {
+    var path = await getPath();
+    var db = await openDatabase(
+      path,
+      version: 1,
+      onCreate: (Database db, int version) async {
+        await db.execute(
+          "CREATE TABLE IF NOT EXISTS timer (" +
+          "id INTEGER PRIMARY KEY, " +
+          "name TEXT, " +
+          "date TEXT, " +
+          "time TEXT, " +
+          "enable INTEGER)"
+        );
+      }
+    );
+    return db;
+  }
+
+  Future<Timer> insert(Timer timer) async {
+    var db = await open();
+    timer.id = await db.insert('timer', timer.toMap());
+    return timer;
+  }
+
+  void update(Timer timer) async {
+    var db = await open();
+    await db.update('timer', timer.toMap(), where: 'id = ?', whereArgs: [timer.id]);
+  }
+
+  void delete(Timer timer) async {
+    var db = await open();
+    await db.delete('timer', where: 'id = ?', whereArgs: [timer.id]);
+  }
+
+  Future<List<Timer>> getAll() async {
+    var db = await open();
+    List<Timer> timers = <Timer>[];
+    List<Map> result = await db.rawQuery('SELECT * FROM timer');
+    for (Map item in result) {
+      print(item);
+      timers.add(Timer.fromMap(item));
+    }
+    return timers;
+
+  }
 }
 
 class TimerList {
   List _timers = <Timer>[];
+
+  DatabaseDriver database = DatabaseDriver();
 
   static final TimerList _singleton = TimerList._internal();
 
@@ -80,7 +146,7 @@ class TimerList {
 
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
-  void initNotification() {
+  void init() {
     var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
     var initializationSettingsIOS = IOSInitializationSettings();
     var initializationSettings = InitializationSettings(
@@ -162,29 +228,43 @@ class TimerList {
     _cancelNotification(timer);
   }
 
+  Future<void> loadDb() async {
+    _timers = await database.getAll();
+    print(_timers);
+  }
+
   List<Timer> get() {
     return _timers;
   }
 
-  void add(Timer timer) {
+  Future<void> add(Timer timer) async {
+    timer = await database.insert(timer);
     setSchedular(timer);
-    _timers.add(timer);
+    await loadDb();
+//    _timers.add(timer);
   }
 
-  void del(Timer timer) {
+  Future<void> del(Timer timer) async {
     cancelSchedular(timer);
-    _timers.remove(timer);
+    await database.delete(timer);
+    await loadDb();
+//    _timers.remove(timer);
   }
 
-  void save(Timer timer) {
-    var idx = _timers.indexOf(timer);
-    if (idx != -1) {
-      print("save: " + idx.toString());
-      _timers[idx] = timer;
+  Future<void> save(Timer timer) async {
+//    var idx = _timers.indexOf(timer);
+//    if (idx != -1) {
+//      print("save: " + idx.toString());
+//      _timers[idx] = timer;
+//
+//      cancelSchedular(timer);
+//      setSchedular(timer);
+//    }
 
-      cancelSchedular(timer);
-      setSchedular(timer);
-    }
+    await database.update(timer);
+    await loadDb();
+    cancelSchedular(timer);
+    setSchedular(timer);
   }
 
   TimerList._internal();
@@ -206,14 +286,24 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
+    print("initState() start");
     super.initState();
-    _timers.initNotification();
+    _timers.init();
+    _timers.loadDb().then((result) {
+      setState(() {
+        print("init setState()");
+      });
+    });
+
+    print("initState() end");
   }
 
   Function delTimer(Timer timer) {
     return () {
-      setState(() {
-        _timers.del(timer);
+      _timers.del(timer).then((result) {
+        setState(() {
+          print("delTimer setState()");
+        });
       });
     };
   }
@@ -231,6 +321,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    print("build() start");
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -482,13 +573,19 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          Future<void> result;
           if (widget.timer == null) {
-            _timers.add(Timer.createTimer(_eventName, _timerDate, _timerTime, _isEnable));
+            result = _timers.add(Timer.createTimer(_eventName, _timerDate, _timerTime, _isEnable));
           } else {
             setTimerFromSelf(widget.timer);
-            _timers.save(widget.timer);
+            result = _timers.save(widget.timer);
           }
-          Navigator.pop(context);
+          result.then((dummy) {
+            Navigator.pop(context);
+            setState(() {
+              print("save/add setState()");
+            });
+          });
         },
         tooltip: 'Save',
         child: Icon(Icons.save),
