@@ -339,6 +339,31 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Add',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+      drawer: Drawer(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(20.0),
+          children: <Widget>[
+            drawerTile1(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget drawerTile1(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.home),
+      title: Text('Home'),
+      onTap: () {
+        showDialog(
+            context: context,
+            builder: (BuildContext context) => AlertDialog(
+              title: Text("Home"),
+              content: Text("sample"),
+            )
+        );
+      },
     );
   }
 
