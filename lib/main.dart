@@ -35,11 +35,20 @@ class Timer {
 
   Timer();
 
+  String convertTimeString(TimeOfDay time) {
+    return timerTime.hour.toString().padLeft(2, "0") + ":" + timerTime.minute.toString().padLeft(2, "0");
+  }
+
+  TimeOfDay convertTimeOfDay(String time) {
+    var times = time.split(":");
+    return TimeOfDay(hour: int.parse(times[0]), minute: int.parse(times[1]));
+  }
+
   Map<String, dynamic> toMap() {
     var map = <String, dynamic>{
       'name': eventName,
       'date': timerDate.toUtc().toString(),
-      'time': timerTime.toString(),
+      'time': convertTimeString(timerTime),
       'enable': isEnable == true ? 1 : 0
     };
     if (id != null) {
@@ -53,8 +62,7 @@ class Timer {
     id = map['id'];
     eventName = map['name'];
     timerDate = DateTime.parse(map['date']);
-    print(map['time']);
-//    timerTime = map['time'];
+    timerTime = convertTimeOfDay(map['time']);
     isEnable = map['enable'] == 1 ? true:false;
   }
 
@@ -230,7 +238,6 @@ class TimerList {
 
   Future<void> loadDb() async {
     _timers = await database.getAll();
-    print(_timers);
   }
 
   List<Timer> get() {
