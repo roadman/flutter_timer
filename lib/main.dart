@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sprintf/sprintf.dart';
 
 void main() => runApp(MyApp());
 
@@ -682,11 +683,25 @@ class _LeaveBehindListItem extends StatelessWidget {
             ),
             child: ListTile(
               title: Text(timer.eventName),
-              subtitle: Text(timer.timerDate.toString() + ' ' + timer.timerTime.toString()),
+              subtitle: Text(
+                generateTimerText(timer.timerDate, timer.timerTime),
+                style: TextStyle(
+                  fontSize: 20.0,
+                ),
+              ),
               isThreeLine: true,
               onTap: _handleEdit,
             ),
           ),
         ));
+  }
+
+  String generateTimerText(DateTime date, TimeOfDay time) {
+    return sprintf("%04d/%02d/%02d(%s) %02d:%02d", [date.year, date.month, date.day, weekdayName(date.weekday), time.hour, time.minute]);
+  }
+
+  String weekdayName(int weekday) {
+    List weeks = <String>['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    return weeks[weekday - 1];
   }
 }
