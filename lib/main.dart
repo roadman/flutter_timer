@@ -247,32 +247,25 @@ class TimerList {
 
   Future<void> add(Timer timer) async {
     timer = await database.insert(timer);
-    setSchedular(timer);
     await loadDb();
-//    _timers.add(timer);
+    if (timer.isEnable) {
+      setSchedular(timer);
+    }
   }
 
   Future<void> del(Timer timer) async {
     cancelSchedular(timer);
     await database.delete(timer);
     await loadDb();
-//    _timers.remove(timer);
   }
 
   Future<void> save(Timer timer) async {
-//    var idx = _timers.indexOf(timer);
-//    if (idx != -1) {
-//      print("save: " + idx.toString());
-//      _timers[idx] = timer;
-//
-//      cancelSchedular(timer);
-//      setSchedular(timer);
-//    }
-
     await database.update(timer);
     await loadDb();
     cancelSchedular(timer);
-    setSchedular(timer);
+    if (timer.isEnable) {
+      setSchedular(timer);
+    }
   }
 
   TimerList._internal();
