@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
 
 class Timer {
   int id;
-  String eventName;
+  String name;
   DateTime timerDate;
   TimeOfDay timerTime;
   bool isEnable;
@@ -47,7 +47,7 @@ class Timer {
 
   Map<String, dynamic> toMap() {
     var map = <String, dynamic>{
-      'name': eventName,
+      'name': name,
       'date': timerDate.toUtc().toString(),
       'time': convertTimeString(timerTime),
       'enable': isEnable == true ? 1 : 0
@@ -61,7 +61,7 @@ class Timer {
 
   Timer.fromMap(Map<String, dynamic> map) {
     id = map['id'];
-    eventName = map['name'];
+    name = map['name'];
     timerDate = DateTime.parse(map['date']);
     timerTime = convertTimeOfDay(map['time']);
     isEnable = map['enable'] == 1 ? true:false;
@@ -71,8 +71,8 @@ class Timer {
     return id;
   }
 
-  Timer.createTimer(String _eventName, DateTime _timerDate, TimeOfDay _timerTime, bool _isEnable) {
-    eventName = _eventName;
+  Timer.createTimer(String _name, DateTime _timerDate, TimeOfDay _timerTime, bool _isEnable) {
+    name = _name;
     timerDate = _timerDate;
     timerTime = _timerTime;
     isEnable = _isEnable;
@@ -496,7 +496,7 @@ class DateAndTimePicker extends StatefulWidget {
 }
 
 class _DateAndTimePickerState extends State<DateAndTimePicker> {
-  String _eventName;
+  String _name;
   DateTime _timerDate;
   TimeOfDay _timerTime;
   bool _isEnable;
@@ -504,14 +504,14 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
   TimerList _timers = TimerList();
 
   void setSelfTimer(Timer timer) {
-    _eventName = timer.eventName;
+    _name = timer.name;
     _timerDate = timer.timerDate;
     _timerTime = timer.timerTime;
     _isEnable  = timer.isEnable;
   }
 
   void setTimerFromSelf(Timer timer) {
-    timer.eventName = _eventName;
+    timer.name = _name;
     timer.timerDate = _timerDate;
     timer.timerTime = _timerTime;
     timer.isEnable  = _isEnable;
@@ -547,10 +547,10 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
                   border: OutlineInputBorder(),
                 ),
                 style: Theme.of(context).textTheme.display1,
-                controller: TextEditingController(text: _eventName),
+                controller: TextEditingController(text: _name),
                 onChanged: (text) {
                   setState(() {
-                    _eventName = text;
+                    _name = text;
                   });
                 },
               ),
@@ -601,7 +601,7 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
         onPressed: () {
           Future<void> result;
           if (widget.timer == null) {
-            result = _timers.add(Timer.createTimer(_eventName, _timerDate, _timerTime, _isEnable));
+            result = _timers.add(Timer.createTimer(_name, _timerDate, _timerTime, _isEnable));
           } else {
             setTimerFromSelf(widget.timer);
             result = _timers.save(widget.timer);
@@ -675,7 +675,7 @@ class _LeaveBehindListItem extends StatelessWidget {
                 )
             ),
             child: ListTile(
-              title: Text(timer.eventName),
+              title: Text(timer.name),
               subtitle: Text(
                 generateTimerText(timer.timerDate, timer.timerTime),
                 style: TextStyle(
