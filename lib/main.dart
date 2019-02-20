@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => MyHomePage(title: 'タイマー一覧'),
+        '/': (context) => MyHomePage(title: 'Timer'),
       },
     );
   }
@@ -37,7 +37,9 @@ class Timer {
   Timer();
 
   String convertTimeString(TimeOfDay time) {
-    return timerTime.hour.toString().padLeft(2, "0") + ":" + timerTime.minute.toString().padLeft(2, "0");
+    return timerTime.hour.toString().padLeft(2, "0") +
+        ":" +
+        timerTime.minute.toString().padLeft(2, "0");
   }
 
   TimeOfDay convertTimeOfDay(String time) {
@@ -64,14 +66,15 @@ class Timer {
     name = map['name'];
     timerDate = DateTime.parse(map['date']);
     timerTime = convertTimeOfDay(map['time']);
-    isEnable = map['enable'] == 1 ? true:false;
+    isEnable = map['enable'] == 1 ? true : false;
   }
 
   int getId() {
     return id;
   }
 
-  Timer.createTimer(String _name, DateTime _timerDate, TimeOfDay _timerTime, bool _isEnable) {
+  Timer.createTimer(
+      String _name, DateTime _timerDate, TimeOfDay _timerTime, bool _isEnable) {
     name = _name;
     timerDate = _timerDate;
     timerTime = _timerTime;
@@ -96,20 +99,15 @@ class DatabaseDriver {
 
   Future<Database> open() async {
     var path = await getPath();
-    var db = await openDatabase(
-      path,
-      version: 1,
-      onCreate: (Database db, int version) async {
-        await db.execute(
-          "CREATE TABLE IF NOT EXISTS timer (" +
+    var db = await openDatabase(path, version: 1,
+        onCreate: (Database db, int version) async {
+      await db.execute("CREATE TABLE IF NOT EXISTS timer (" +
           "id INTEGER PRIMARY KEY, " +
           "name TEXT, " +
           "date TEXT, " +
           "time TEXT, " +
-          "enable INTEGER)"
-        );
-      }
-    );
+          "enable INTEGER)");
+    });
     return db;
   }
 
@@ -119,9 +117,10 @@ class DatabaseDriver {
     return timer;
   }
 
-  void update(Timer timer) async {
+  Future<void> update(Timer timer) async {
     var db = await open();
-    await db.update('timer', timer.toMap(), where: 'id = ?', whereArgs: [timer.id]);
+    await db
+        .update('timer', timer.toMap(), where: 'id = ?', whereArgs: [timer.id]);
   }
 
   void delete(Timer timer) async {
@@ -138,7 +137,6 @@ class DatabaseDriver {
       timers.add(Timer.fromMap(item));
     }
     return timers;
-
   }
 }
 
@@ -156,17 +154,14 @@ class TimerList {
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
   void init() {
-    var initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
+    var initializationSettingsAndroid =
+        AndroidInitializationSettings('app_icon');
     var initializationSettingsIOS = IOSInitializationSettings();
     var initializationSettings = InitializationSettings(
-        initializationSettingsAndroid,
-        initializationSettingsIOS
-    );
+        initializationSettingsAndroid, initializationSettingsIOS);
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    flutterLocalNotificationsPlugin.initialize(
-        initializationSettings,
-        onSelectNotification: onSelectNotification
-    );
+    flutterLocalNotificationsPlugin.initialize(initializationSettings,
+        onSelectNotification: onSelectNotification);
   }
 
   Future onSelectNotification(String payload) async {
@@ -188,20 +183,21 @@ class TimerList {
     vibrationPattern[3] = 2000;
 
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-        'your channel id',
-        'your channel name',
-        'your channel description',
-        importance: Importance.Max,
-        priority: Priority.High,
-        icon: 'secondary_icon',
-        sound: 'slow_spring_board',
-        largeIcon: 'sample_large_icon',
-        largeIconBitmapSource: BitmapSource.Drawable,
-        vibrationPattern: vibrationPattern,
-        color: const Color.fromARGB(255, 255, 0, 0),
+      'your channel id',
+      'your channel name',
+      'your channel description',
+      importance: Importance.Max,
+      priority: Priority.High,
+      icon: 'secondary_icon',
+      sound: 'slow_spring_board',
+      largeIcon: 'sample_large_icon',
+      largeIconBitmapSource: BitmapSource.Drawable,
+      vibrationPattern: vibrationPattern,
+      color: const Color.fromARGB(255, 255, 0, 0),
     );
     var iOSPlatformChannelSpecifics = IOSNotificationDetails();
-    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    var platformChannelSpecifics = NotificationDetails(
+        androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
 
     var timerDt = DateTime(
       timer.timerDate.year,
@@ -212,7 +208,10 @@ class TimerList {
     );
 //    var timerDt = DateTime.now().add(Duration(seconds: 5));
 
-    print("set timer:" + timer.getId().toString() + " " + timerDt.toIso8601String());
+    print("set timer:" +
+        timer.getId().toString() +
+        " " +
+        timerDt.toIso8601String());
     await flutterLocalNotificationsPlugin.schedule(
       timer.getId(),
       'Timer',
@@ -221,7 +220,6 @@ class TimerList {
       platformChannelSpecifics,
       payload: 'Default_Sound',
     );
-
   }
 
   Future _cancelNotification(Timer timer) async {
@@ -238,7 +236,9 @@ class TimerList {
   }
 
   Future<void> loadDb() async {
-    _timers = await database.getAll();
+    await database.getAll().then((List<Timer> timers) {
+      _timers = timers;
+    });
   }
 
   List<Timer> get() {
@@ -311,13 +311,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Function _onPressed(BuildContext context, Timer timer) {
     return () {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => DateAndTimePicker(timer: timer)
-            )
-        );
-      };
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => DateAndTimePicker(timer: timer)));
+    };
   }
 
   @override
@@ -353,10 +351,9 @@ class _MyHomePageState extends State<MyHomePage> {
         showDialog(
             context: context,
             builder: (BuildContext context) => AlertDialog(
-              title: Text("Home"),
-              content: Text("sample"),
-            )
-        );
+                  title: Text("Home"),
+                  content: Text("sample"),
+                ));
       },
     );
   }
@@ -507,14 +504,14 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
     _name = timer.name;
     _timerDate = timer.timerDate;
     _timerTime = timer.timerTime;
-    _isEnable  = timer.isEnable;
+    _isEnable = timer.isEnable;
   }
 
   void setTimerFromSelf(Timer timer) {
     timer.name = _name;
     timer.timerDate = _timerDate;
     timer.timerTime = _timerTime;
-    timer.isEnable  = _isEnable;
+    timer.isEnable = _isEnable;
   }
 
   @override
@@ -531,7 +528,7 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('タイマー設定'),
+        title: const Text('New Timer'),
       ),
       body: DropdownButtonHideUnderline(
         child: SafeArea(
@@ -575,24 +572,15 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Switch.adaptive(
-                      value: _isEnable,
-                      onChanged: (bool value) {
-                        setState(() {
-                          _isEnable = value;
-                        });
-                      }
-                    ),
+                        value: _isEnable,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _isEnable = value;
+                          });
+                        }),
                   ],
                 ),
-              )
-//              Switch(
-//                value: _isEnable,
-//                onChanged: (bool value) {
-//                  setState(() {
-//                    _isEnable = value;
-//                  });
-//                }
-//              )
+              ),
             ],
           ),
         ),
@@ -601,7 +589,8 @@ class _DateAndTimePickerState extends State<DateAndTimePicker> {
         onPressed: () {
           Future<void> result;
           if (widget.timer == null) {
-            result = _timers.add(Timer.createTimer(_name, _timerDate, _timerTime, _isEnable));
+            result = _timers.add(
+                Timer.createTimer(_name, _timerDate, _timerTime, _isEnable));
           } else {
             setTimerFromSelf(widget.timer);
             result = _timers.save(widget.timer);
@@ -642,6 +631,25 @@ class _LeaveBehindListItem extends StatelessWidget {
     onEdit();
   }
 
+  Widget circleButton(String text, Function onPressed) {
+    return Center(
+        child: InkWell(
+      onTap: onPressed,
+      child: Container(
+        //width: 50.0,
+        //height: 50.0,
+        padding: const EdgeInsets.all(10.0),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+//            borderRadius: BorderRadius.circular(30.0),
+          color: Colors.lightBlue,
+        ),
+        child:
+            Text(text, style: TextStyle(color: Colors.white, fontSize: 50.0)),
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -658,22 +666,12 @@ class _LeaveBehindListItem extends StatelessWidget {
           background: Container(
               color: theme.primaryColor,
               child: const ListTile(
-                  leading: Icon(
-                      Icons.delete,
-                      color: Colors.white,
-                      size: 36.0
-                  )
-              )
-          ),
+                  leading:
+                      Icon(Icons.delete, color: Colors.white, size: 36.0))),
           child: Container(
             decoration: BoxDecoration(
                 color: theme.canvasColor,
-                border: Border(
-                    bottom: BorderSide(
-                        color: theme.dividerColor
-                    )
-                )
-            ),
+                border: Border(bottom: BorderSide(color: theme.dividerColor))),
             child: ListTile(
               title: Text(timer.name),
               subtitle: Text(
@@ -690,7 +688,14 @@ class _LeaveBehindListItem extends StatelessWidget {
   }
 
   String generateTimerText(DateTime date, TimeOfDay time) {
-    return sprintf("%04d/%02d/%02d(%s) %02d:%02d", [date.year, date.month, date.day, weekdayName(date.weekday), time.hour, time.minute]);
+    return sprintf("%04d/%02d/%02d(%s) %02d:%02d", [
+      date.year,
+      date.month,
+      date.day,
+      weekdayName(date.weekday),
+      time.hour,
+      time.minute
+    ]);
   }
 
   String weekdayName(int weekday) {
