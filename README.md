@@ -1,6 +1,6 @@
 # flutter_timer
 
-A new Flutter project.
+- flutter timer application(unfinished).
 
 ## Getting Started
 
